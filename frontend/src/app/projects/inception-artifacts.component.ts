@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService, InceptionArtifact } from '../services/api.service';
+import { sharedFormStyles } from './shared-styles';
 
 @Component({
   selector: 'app-inception-artifacts',
@@ -10,108 +11,129 @@ import { ApiService, InceptionArtifact } from '../services/api.service';
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <a [routerLink]="['/projects', projectId]" class="link-back">← Volver al proyecto</a>
-    <h1>Artefactos de Incepción</h1>
+    <div class="header">
+      <div>
+        <p class="eyebrow">Incepción</p>
+        <h1>Artefactos</h1>
+      </div>
+      <button class="btn primary" type="button" (click)="toggleRequired()">Filtrar obligatorios</button>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="add()" class="form">
-      <label>
-        Nombre *
-        <input type="text" formControlName="name" required />
-      </label>
-
-      <label>
-        Estado *
-        <select formControlName="status" required>
-          <option value="">Selecciona un estado</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="en-progreso">En progreso</option>
-          <option value="completo">Completo</option>
-        </select>
-      </label>
-
-      <label class="checkbox">
-        <input type="checkbox" formControlName="required" />
-        Obligatorio
-      </label>
-
-      <button class="btn primary" type="submit" [disabled]="form.invalid">Agregar</button>
+    <form [formGroup]="form" (ngSubmit)="add()" class="form condensed">
+      <div class="field-group">
+        <label>
+          Nombre *
+          <input type="text" formControlName="name" required />
+        </label>
+        <label>
+          Estado *
+          <select formControlName="status" required>
+            <option value="">Selecciona un estado</option>
+            <option value="pending">Pendiente</option>
+            <option value="in-progress">En progreso</option>
+            <option value="done">Completo</option>
+          </select>
+        </label>
+        <label class="checkbox">
+          <input type="checkbox" formControlName="required" />
+          Obligatorio
+        </label>
+      </div>
+      <button class="btn primary" type="submit" [disabled]="form.invalid">Agregar artefacto</button>
     </form>
 
-    <div class="list">
-      <article *ngFor="let art of artifacts" class="item">
-        <div>
-          <h3>{{ art.name }}</h3>
-          <p class="muted small">Estado: {{ art.status }} · {{ art.required ? 'Obligatorio' : 'Opcional' }}</p>
-        </div>
-      </article>
+    <div class="artifact-table">
+      <div class="row header-row">
+        <span>Nombre</span>
+        <span>Estado</span>
+        <span>Requerido</span>
+      </div>
+      <div
+        class="row"
+        *ngFor="let art of filteredArtifacts"
+      >
+        <span>{{ art.name }}</span>
+        <span class="status" [attr.data-status]="art.status">{{ art.status | titlecase }}</span>
+        <span>{{ art.required ? 'Sí' : 'No' }}</span>
+      </div>
+      <div class="empty" *ngIf="!filteredArtifacts.length">No hay artefactos registrados.</div>
     </div>
   `,
   styles: [
+    sharedFormStyles,
     `
-      h1 {
-        margin: 0 0 1rem;
-      }
-      .form {
+      .header {
         display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
       }
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-weight: 600;
+      h1 {
+        margin: 0;
       }
-      input,
-      select {
-        border: 1px solid #cbd5e1;
-        border-radius: 0.5rem;
-        padding: 0.65rem 0.75rem;
-        font-size: 1rem;
-      }
-      .checkbox {
-        flex-direction: row;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      .btn {
-        align-self: flex-start;
-        border-radius: 999px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 700;
-        cursor: pointer;
-        color: #fff;
-        background: #0ea5e9;
-      }
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-      .list {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-      .item {
+      .form.condensed {
         border: 1px solid #e5e7eb;
         border-radius: 0.75rem;
-        padding: 0.75rem;
+        padding: 1rem;
+        background: #fff;
+        margin-bottom: 1rem;
+      }
+      .field-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+      }
+      .checkbox {
+        align-items: center;
+        gap: 0.4rem;
+      }
+      .artifact-table {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        overflow: hidden;
         background: #fff;
       }
-      .muted {
-        color: #6b7280;
-        margin: 0.15rem 0;
+      .row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        font-weight: 500;
+        align-items: center;
       }
-      .small {
-        font-size: 0.9rem;
+      .header-row {
+        background: #f8fafc;
+        color: #475569;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
       }
-      .link-back {
-        display: inline-flex;
-        margin-bottom: 0.5rem;
-        color: #0ea5e9;
-        text-decoration: none;
-        font-weight: 600;
+      .row:last-child {
+        border-bottom: none;
+      }
+      .empty {
+        padding: 1rem;
+        text-align: center;
+        color: #94a3b8;
+      }
+      .status {
+        width: fit-content;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+      }
+      .status[data-status='pending'] {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status[data-status='in-progress'] {
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .status[data-status='done'] {
+        background: #dcfce7;
+        color: #14532d;
       }
     `,
   ],
@@ -121,6 +143,7 @@ export class InceptionArtifactsComponent implements OnInit {
   artifacts: InceptionArtifact[] = [];
 
   form!: FormGroup;
+  onlyRequired = false;
 
   constructor(private fb: FormBuilder, private api: ApiService, private route: ActivatedRoute) {}
 
@@ -145,7 +168,18 @@ export class InceptionArtifactsComponent implements OnInit {
     });
   }
 
+  toggleRequired() {
+    this.onlyRequired = !this.onlyRequired;
+  }
+
   private load() {
     this.api.getInceptionArtifacts(this.projectId).subscribe((data) => (this.artifacts = data));
+  }
+
+  get filteredArtifacts() {
+    if (this.onlyRequired) {
+      return this.artifacts.filter((artifact) => artifact.required);
+    }
+    return this.artifacts;
   }
 }

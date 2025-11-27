@@ -1,56 +1,15 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, switchMap } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
+import {
+  Project,
+  Plan,
+  InceptionArtifact,
+  Iteration,
+  RoleAssignment,
+} from '../models/openup.model';
 
-export interface Phase {
-  id: string;
-  key: string;
-  name: string;
-  order: number;
-  projectId: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  phases: Phase[];
-}
-
-export interface Plan {
-  id?: string;
-  projectId: string;
-  summary: string;
-  objectives?: string;
-  risks?: string;
-}
-
-export interface InceptionArtifact {
-  id: string;
-  projectId: string;
-  name: string;
-  status: string;
-  required: boolean;
-}
-
-export interface Iteration {
-  id: string;
-  projectId: string;
-  phaseId: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  goal?: string;
-}
-
-export interface RoleAssignment {
-  id: string;
-  projectId: string;
-  user: string;
-  role: string;
-}
+export type { Project, Plan, InceptionArtifact, Iteration, RoleAssignment };
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

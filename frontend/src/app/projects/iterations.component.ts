@@ -2,7 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiService, Iteration, Phase, Project } from '../services/api.service';
+import { ApiService } from '../services/api.service';
+import { Iteration, Phase } from '../models/openup.model';
+import { sharedFormStyles } from './shared-styles';
 
 @Component({
   selector: 'app-iterations',
@@ -52,6 +54,7 @@ import { ApiService, Iteration, Phase, Project } from '../services/api.service';
     </div>
   `,
   styles: [
+    sharedFormStyles,
     `
       h1 {
         margin: 0 0 1rem;
@@ -68,43 +71,10 @@ import { ApiService, Iteration, Phase, Project } from '../services/api.service';
         border-radius: 0.5rem;
         padding: 0.55rem 0.65rem;
       }
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        margin-bottom: 1rem;
-      }
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-weight: 600;
-      }
-      input,
-      textarea {
-        border: 1px solid #cbd5e1;
-        border-radius: 0.5rem;
-        padding: 0.65rem 0.75rem;
-        font-size: 1rem;
-      }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 0.75rem;
-      }
-      .btn {
-        align-self: flex-start;
-        border-radius: 999px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 700;
-        cursor: pointer;
-        color: #fff;
-        background: #0ea5e9;
-      }
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
       }
       .list {
         display: flex;
@@ -116,20 +86,6 @@ import { ApiService, Iteration, Phase, Project } from '../services/api.service';
         border-radius: 0.75rem;
         padding: 0.75rem;
         background: #fff;
-      }
-      .muted {
-        color: #6b7280;
-        margin: 0.15rem 0;
-      }
-      .small {
-        font-size: 0.9rem;
-      }
-      .link-back {
-        display: inline-flex;
-        margin-bottom: 0.5rem;
-        color: #0ea5e9;
-        text-decoration: none;
-        font-weight: 600;
       }
     `,
   ],

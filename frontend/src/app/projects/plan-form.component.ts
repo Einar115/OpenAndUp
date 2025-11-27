@@ -2,7 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiService, Plan, Project } from '../services/api.service';
+import { ApiService, Plan } from '../services/api.service';
+import { sharedFormStyles } from './shared-styles';
 
 @Component({
   selector: 'app-plan-form',
@@ -12,74 +13,70 @@ import { ApiService, Plan, Project } from '../services/api.service';
     <a [routerLink]="['/projects', projectId]" class="link-back">← Volver al proyecto</a>
     <h1>Plan del proyecto</h1>
 
-    <form [formGroup]="form" (ngSubmit)="submit()" class="form">
-      <label>
-        Resumen *
-        <textarea rows="3" formControlName="summary" required></textarea>
-      </label>
+    <form [formGroup]="form" (ngSubmit)="submit()" class="form plan">
+      <section>
+        <h2>Resumen ejecutivo</h2>
+        <p class="helper">Define los objetivos de alto nivel que justifican el proyecto.</p>
+        <label>
+          Resumen *
+          <textarea rows="4" formControlName="summary" required></textarea>
+        </label>
+      </section>
 
-      <label>
-        Objetivos
-        <textarea rows="3" formControlName="objectives"></textarea>
-      </label>
+      <section>
+        <h2>Objetivos</h2>
+        <label>
+          Objetivos
+          <textarea rows="3" formControlName="objectives"></textarea>
+        </label>
+      </section>
 
-      <label>
-        Riesgos
-        <textarea rows="3" formControlName="risks"></textarea>
-      </label>
+      <section>
+        <h2>Riesgos</h2>
+        <label>
+          Riesgos
+          <textarea rows="3" formControlName="risks"></textarea>
+        </label>
+      </section>
 
-      <button class="btn primary" type="submit" [disabled]="form.invalid">Guardar plan</button>
+      <div class="plan-actions">
+        <span class="status-indicator">Última actualización: {{ savedPlan?.updatedAt || '—' }}</span>
+        <button class="btn primary" type="submit" [disabled]="form.invalid">Guardar plan</button>
+      </div>
     </form>
-
-    <div *ngIf="savedPlan" class="saved-note">Plan guardado.</div>
   `,
   styles: [
+    sharedFormStyles,
     `
       h1 {
         margin: 0 0 1rem;
       }
-      .form {
+      .plan section {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        background: #fff;
+        margin-bottom: 0.75rem;
+      }
+      .plan section h2 {
+        margin: 0 0 0.35rem;
+        font-size: 1rem;
+      }
+      .helper {
+        margin: 0;
+        color: #64748b;
+        font-size: 0.9rem;
+      }
+      .plan-actions {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
         gap: 1rem;
       }
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-weight: 600;
-      }
-      textarea {
-        border: 1px solid #cbd5e1;
-        border-radius: 0.5rem;
-        padding: 0.65rem 0.75rem;
-        font-family: inherit;
-      }
-      .btn {
-        align-self: flex-start;
-        border-radius: 999px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 700;
-        cursor: pointer;
-        color: #fff;
-        background: #0ea5e9;
-      }
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-      .link-back {
-        display: inline-flex;
-        margin-bottom: 0.5rem;
-        color: #0ea5e9;
-        text-decoration: none;
-        font-weight: 600;
-      }
-      .saved-note {
-        margin-top: 0.75rem;
-        color: #16a34a;
-        font-weight: 600;
+      .status-indicator {
+        font-size: 0.85rem;
+        color: #0f172a;
       }
     `,
   ],

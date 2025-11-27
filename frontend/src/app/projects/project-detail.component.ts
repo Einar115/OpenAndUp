@@ -9,41 +9,60 @@ import { ApiService, Project } from '../services/api.service';
   imports: [CommonModule, RouterLink],
   template: `
     <a routerLink="/projects" class="link-back">← Volver</a>
-    <div *ngIf="project; else loading">
-      <div class="header">
+
+    <ng-container *ngIf="project; else loading">
+      <section class="summary-card">
         <div>
           <p class="eyebrow">Proyecto</p>
           <h1>{{ project.name }}</h1>
           <p class="muted">{{ project.description || 'Sin descripción' }}</p>
-          <p class="muted small">
-            {{ project.startDate || 'Sin inicio' }} — {{ project.endDate || 'Sin fin' }}
-          </p>
+          <div class="dates">
+            <span>Inicio: {{ project.startDate || '—' }}</span>
+            <span>Fin: {{ project.endDate || '—' }}</span>
+          </div>
         </div>
-        <div class="actions">
-          <a class="btn ghost" [routerLink]="['/projects', project.id, 'plan']">Plan</a>
-          <a class="btn ghost" [routerLink]="['/projects', project.id, 'inception']">Incepción</a>
-          <a class="btn ghost" [routerLink]="['/projects', project.id, 'iterations']">Iteraciones</a>
-          <a class="btn ghost" [routerLink]="['/projects', project.id, 'roles']">Roles</a>
+        <div class="shortcuts">
+          <a [routerLink]="['/projects', project.id, 'plan']">Plan</a>
+          <a [routerLink]="['/projects', project.id, 'inception']">Artefactos</a>
+          <a [routerLink]="['/projects', project.id, 'iterations']">Iteraciones</a>
+          <a [routerLink]="['/projects', project.id, 'roles']">Equipo</a>
         </div>
-      </div>
+      </section>
 
       <section class="phases">
-        <h2>Fases</h2>
+        <header>
+          <h2>Fases OpenUP</h2>
+          <p>{{ project.phases.length }} fases definidas</p>
+        </header>
         <div class="phase-grid">
           <article *ngFor="let phase of project.phases" class="phase">
-            <p class="eyebrow">Fase {{ phase.order }}</p>
+            <div class="phase-top">
+              <p class="eyebrow">Fase {{ phase.order }}</p>
+              <span class="status" [attr.data-status]="phase.status">{{ phase.status | titlecase }}</span>
+            </div>
             <h3>{{ phase.name }}</h3>
-            <p class="muted">ID: {{ phase.id }}</p>
+            <p>ID: {{ phase.id }}</p>
           </article>
         </div>
       </section>
-    </div>
+    </ng-container>
+
     <ng-template #loading>
       <p class="muted">Cargando proyecto...</p>
     </ng-template>
   `,
   styles: [
     `
+      .summary-card {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        border: 1px solid #e5e7eb;
+        background: #fff;
+        flex-wrap: wrap;
+      }
       .link-back {
         display: inline-flex;
         margin-bottom: 0.5rem;
@@ -51,63 +70,82 @@ import { ApiService, Project } from '../services/api.service';
         text-decoration: none;
         font-weight: 600;
       }
-      .header {
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        font-size: 0.7rem;
+        margin: 0;
+        color: #475569;
+      }
+      h1 {
+        margin: 0.25rem 0;
+      }
+      .muted {
+        color: #475569;
+        margin: 0.25rem 0;
+      }
+      .dates {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+      }
+      .shortcuts {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .shortcuts a {
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 0.5rem;
+        color: #0f172a;
+        font-weight: 600;
+        text-align: center;
+        background: #f8fafc;
+      }
+      .phases {
+        margin-top: 1.5rem;
+      }
+      .phases header {
         display: flex;
         justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 1rem;
+      }
+      .phase-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1rem;
-        align-items: flex-start;
-        flex-wrap: wrap;
+      }
+      .phase {
         border: 1px solid #e5e7eb;
         border-radius: 0.75rem;
         padding: 1rem;
         background: #fff;
       }
-      .eyebrow {
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #6b7280;
-        font-size: 0.75rem;
-        margin: 0;
-      }
-      h1 {
-        margin: 0.1rem 0;
-      }
-      .muted {
-        color: #6b7280;
-        margin: 0.1rem 0;
-      }
-      .small {
-        font-size: 0.9rem;
-      }
-      .actions {
+      .phase-top {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+        justify-content: space-between;
+        align-items: center;
       }
-      .btn {
+      .status {
+        font-size: 0.75rem;
         border-radius: 999px;
-        border: 1px solid #cbd5e1;
-        padding: 0.5rem 0.9rem;
-        text-decoration: none;
-        color: #0f172a;
-        font-weight: 600;
+        padding: 0.1rem 0.6rem;
+        border: 1px solid transparent;
       }
-      .btn.ghost:hover {
-        background: #f8fafc;
+      .status[data-status='in-progress'] {
+        background: #fef3c7;
+        color: #92400e;
       }
-      .phases {
-        margin-top: 1rem;
+      .status[data-status='complete'] {
+        background: #dcfce7;
+        color: #047857;
       }
-      .phase-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 0.75rem;
-      }
-      .phase {
-        border: 1px solid #e5e7eb;
-        border-radius: 0.75rem;
-        padding: 0.75rem;
-        background: #f8fafc;
+      .status[data-status='not-started'] {
+        background: #e0e7ff;
+        color: #4338ca;
       }
     `,
   ],

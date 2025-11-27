@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService, RoleAssignment } from '../services/api.service';
+import { sharedFormStyles } from './shared-styles';
 
-const ROLE_OPTIONS = ['Project Manager', 'Equipo Técnico', 'QA', 'Stakeholder', 'Coach', 'Scrum Master'];
+const ROLE_OPTIONS = ['Project Manager', 'Tech Lead', 'QA', 'Stakeholder', 'Coach', 'Developer'];
 
 @Component({
   selector: 'app-roles',
@@ -12,12 +13,18 @@ const ROLE_OPTIONS = ['Project Manager', 'Equipo Técnico', 'QA', 'Stakeholder',
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <a [routerLink]="['/projects', projectId]" class="link-back">← Volver al proyecto</a>
-    <h1>Asignación de roles</h1>
+    <div class="header">
+      <div>
+        <p class="eyebrow">Equipo del proyecto</p>
+        <h1>Roles asignados</h1>
+      </div>
+      <p class="helper">Agrega usuarios con roles que guiarán cada fase.</p>
+    </div>
 
-    <form [formGroup]="form" (ngSubmit)="add()" class="form">
+    <form [formGroup]="form" (ngSubmit)="add()" class="form row">
       <label>
         Usuario *
-        <input type="text" formControlName="user" required />
+        <input type="text" formControlName="user" placeholder="Nombre o correo" required />
       </label>
       <label>
         Rol *
@@ -26,55 +33,41 @@ const ROLE_OPTIONS = ['Project Manager', 'Equipo Técnico', 'QA', 'Stakeholder',
           <option *ngFor="let r of roleOptions" [value]="r">{{ r }}</option>
         </select>
       </label>
-      <button class="btn primary" type="submit" [disabled]="form.invalid">Asignar</button>
+      <button class="btn primary" type="submit" [disabled]="form.invalid">Agregar miembro</button>
     </form>
 
-    <div class="list">
+    <section class="list">
       <article *ngFor="let role of roles" class="item">
+        <div class="avatar">{{ role.user.charAt(0) }}</div>
         <div>
           <h3>{{ role.user }}</h3>
-          <p class="muted small">{{ role.role }}</p>
+          <p class="muted">{{ role.role }}</p>
         </div>
+        <span class="date">{{ role.assignedAt | date: 'mediumDate' }}</span>
       </article>
-    </div>
+      <div class="empty" *ngIf="!roles.length">Todavía no hay equipo asignado.</div>
+    </section>
   `,
   styles: [
+    sharedFormStyles,
     `
-      h1 {
-        margin: 0 0 1rem;
-      }
-      .form {
+      .header {
         display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        justify-content: space-between;
+        align-items: flex-start;
         margin-bottom: 1rem;
       }
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: 0.35rem;
-        font-weight: 600;
+      h1 {
+        margin: 0;
       }
-      input,
-      select {
-        border: 1px solid #cbd5e1;
-        border-radius: 0.5rem;
-        padding: 0.65rem 0.75rem;
-        font-size: 1rem;
+      .helper {
+        margin: 0;
+        color: #475569;
       }
-      .btn {
-        align-self: flex-start;
-        border-radius: 999px;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        font-weight: 700;
-        cursor: pointer;
-        color: #fff;
-        background: #0ea5e9;
-      }
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
+      .form.row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
       }
       .list {
         display: flex;
@@ -82,24 +75,37 @@ const ROLE_OPTIONS = ['Project Manager', 'Equipo Técnico', 'QA', 'Stakeholder',
         gap: 0.75rem;
       }
       .item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
         border: 1px solid #e5e7eb;
         border-radius: 0.75rem;
-        padding: 0.75rem;
+        padding: 0.75rem 1rem;
         background: #fff;
       }
-      .muted {
-        color: #6b7280;
-        margin: 0.15rem 0;
-      }
-      .small {
-        font-size: 0.9rem;
-      }
-      .link-back {
+      .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
         display: inline-flex;
-        margin-bottom: 0.5rem;
-        color: #0ea5e9;
-        text-decoration: none;
-        font-weight: 600;
+        align-items: center;
+        justify-content: center;
+        background: #0ea5e9;
+        color: #fff;
+        font-weight: 700;
+      }
+      .item h3 {
+        margin: 0;
+      }
+      .date {
+        margin-left: auto;
+        font-size: 0.8rem;
+        color: #94a3b8;
+      }
+      .empty {
+        padding: 1rem;
+        text-align: center;
+        color: #94a3b8;
       }
     `,
   ],
