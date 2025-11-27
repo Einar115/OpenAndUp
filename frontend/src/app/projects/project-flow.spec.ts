@@ -74,17 +74,17 @@ describe('Proyecto UI flow', () => {
     const apiSpy = jasmine.createSpyObj<ApiService>('ApiService', ['getInceptionArtifacts', 'addInceptionArtifact']);
     apiSpy.getInceptionArtifacts.and.returnValue(of([]));
     apiSpy.addInceptionArtifact.and.returnValue(
-      of({ id: 'art-flow', projectId: 'proj-flow', name: 'Documento', status: 'pendiente', required: true })
+      of({ id: 'art-flow', projectId: 'proj-flow', name: 'Documento', status: 'pending', required: true })
     );
     const route = createActivatedRoute('proj-flow');
     const component = new InceptionArtifactsComponent(fb, apiSpy as ApiService, route);
     component.ngOnInit();
-    component.form.setValue({ name: 'Documento', status: 'pendiente', required: true });
+    component.form.setValue({ name: 'Documento', status: 'pending', required: true });
 
     component.add();
     expect(apiSpy.addInceptionArtifact).toHaveBeenCalledWith('proj-flow', {
       name: 'Documento',
-      status: 'pendiente',
+      status: 'pending',
       required: true,
     });
     expect(apiSpy.getInceptionArtifacts).toHaveBeenCalledTimes(2);
