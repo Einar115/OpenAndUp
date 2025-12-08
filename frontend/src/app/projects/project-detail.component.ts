@@ -23,11 +23,12 @@ import { ApiService, Project } from '../services/api.service';
         </div>
         <div class="shortcuts">
           <a [routerLink]="['/projects', project.id, 'plan']">Plan</a>
-          <a [routerLink]="['/projects', project.id, 'inception']">Artefactos</a>
+          <a [routerLink]="['/projects', project.id, 'artifacts']">Artefactos genéricos</a>
           <a [routerLink]="['/projects', project.id, 'iterations']">Iteraciones</a>
           <a [routerLink]="['/projects', project.id, 'roles']">Equipo</a>
           <a [routerLink]="['/projects', project.id, 'versions']">Versiones</a>
           <a [routerLink]="['/projects', project.id, 'defects']">Defectos</a>
+          <a [routerLink]="['/projects', project.id, 'test-cases']">Casos de prueba</a>
           <hr style="margin: 0.5rem 0; border: 0; border-top: 1px solid #e5e7eb;">
           <a [routerLink]="['/projects', project.id, 'tracking']" style="color: #667eea;">📊 Seguimiento</a>
           <a [routerLink]="['/projects', project.id, 'workflow-board']" style="color: #667eea;">📋 Tablero</a>
