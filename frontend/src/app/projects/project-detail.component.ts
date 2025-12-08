@@ -26,6 +26,12 @@ import { ApiService, Project } from '../services/api.service';
           <a [routerLink]="['/projects', project.id, 'inception']">Artefactos</a>
           <a [routerLink]="['/projects', project.id, 'iterations']">Iteraciones</a>
           <a [routerLink]="['/projects', project.id, 'roles']">Equipo</a>
+          <a [routerLink]="['/projects', project.id, 'versions']">Versiones</a>
+          <a [routerLink]="['/projects', project.id, 'defects']">Defectos</a>
+          <hr style="margin: 0.5rem 0; border: 0; border-top: 1px solid #e5e7eb;">
+          <a [routerLink]="['/projects', project.id, 'tracking']" style="color: #667eea;">📊 Seguimiento</a>
+          <a [routerLink]="['/projects', project.id, 'workflow-board']" style="color: #667eea;">📋 Tablero</a>
+          <a [routerLink]="['/projects', project.id, 'task-assignments']" style="color: #667eea;">👥 Asignaciones</a>
         </div>
       </section>
 

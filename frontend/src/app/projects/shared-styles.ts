@@ -60,3 +60,5 @@ export const sharedFormStyles = `
     font-size: 0.9rem;
   }
 `;
+
+export const sharedStyles = sharedFormStyles;

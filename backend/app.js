@@ -9,6 +9,9 @@ const Plan = require('./models/Plan');
 const Iteration = require('./models/Iteration');
 const InceptionArtifact = require('./models/InceptionArtifact');
 const RoleAssignment = require('./models/RoleAssignment');
+const Version = require('./models/Version');
+const Defect = require('./models/Defect');
+const Task = require('./models/Task');
 
 const app = express();
 
@@ -338,6 +341,8 @@ app.post('/admin/reset', async (_req, res) => {
     const db = require('./db');
     
     // Eliminar datos en orden correcto (debido a foreign keys)
+    await db('defects').del();
+    await db('versions').del();
     await db('role_assignments').del();
     await db('inception_artifacts').del();
     await db('iterations').del();
@@ -365,6 +370,8 @@ if (process.env.NODE_ENV !== 'production') {
         iterations: await db('iterations').count('* as count').first(),
         inceptionArtifacts: await db('inception_artifacts').count('* as count').first(),
         roleAssignments: await db('role_assignments').count('* as count').first(),
+        versions: await db('versions').count('* as count').first(),
+        defects: await db('defects').count('* as count').first(),
       };
       
       res.json({
@@ -379,6 +386,351 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 }
+
+// ============ VERSIONES ============
+
+// Obtener versiones de un proyecto (historial)
+app.get('/projects/:id/versions', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const versions = await Version.findByProject(req.params.id);
+    res.json(versions);
+  } catch (error) {
+    console.error('Error al obtener versiones:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Crear nueva versión
+app.post('/projects/:id/versions', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const error = validateRequired(['version'], req.body);
+    if (error) return res.status(400).json({ error });
+
+    const version = await Version.create(req.params.id, req.body);
+    res.status(201).json(version);
+  } catch (error) {
+    // Manejar error de versión duplicada
+    if (error.code === 'SQLITE_CONSTRAINT') {
+      return res.status(409).json({ 
+        error: 'Esta versión ya existe en el proyecto' 
+      });
+    }
+    
+    console.error('Error al crear versión:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar estado de versión
+app.put('/projects/:projectId/versions/:versionId/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['draft', 'released', 'archived'];
+    
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: `Estado inválido. Valores permitidos: ${validStatuses.join(', ')}` 
+      });
+    }
+
+    const version = await Version.updateStatus(req.params.versionId, status);
+    if (!version) {
+      return res.status(404).json({ error: 'Versión no encontrada' });
+    }
+
+    res.json(version);
+  } catch (error) {
+    console.error('Error al actualizar estado de versión:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ DEFECTOS ============
+
+// Obtener defectos de un proyecto
+app.get('/projects/:id/defects', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    // Aplicar filtros opcionales de query params
+    const filters = {};
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.severity) filters.severity = req.query.severity;
+    if (req.query.priority) filters.priority = req.query.priority;
+    if (req.query.assignedTo) filters.assignedTo = req.query.assignedTo;
+
+    const defects = await Defect.findByProject(req.params.id, filters);
+    res.json(defects);
+  } catch (error) {
+    console.error('Error al obtener defectos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Crear defecto
+app.post('/projects/:id/defects', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const error = validateRequired(['title'], req.body);
+    if (error) return res.status(400).json({ error });
+
+    // Validar severity
+    const validSeverities = ['low', 'medium', 'high', 'critical'];
+    if (req.body.severity && !validSeverities.includes(req.body.severity)) {
+      return res.status(400).json({ 
+        error: `Severidad inválida. Valores permitidos: ${validSeverities.join(', ')}` 
+      });
+    }
+
+    // Validar priority
+    const validPriorities = ['low', 'medium', 'high'];
+    if (req.body.priority && !validPriorities.includes(req.body.priority)) {
+      return res.status(400).json({ 
+        error: `Prioridad inválida. Valores permitidos: ${validPriorities.join(', ')}` 
+      });
+    }
+
+    const defect = await Defect.create(req.params.id, req.body);
+    res.status(201).json(defect);
+  } catch (error) {
+    console.error('Error al crear defecto:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Cambiar estado de defecto
+app.put('/projects/:projectId/defects/:defectId/status', async (req, res) => {
+  try {
+    const { status, resolutionNotes } = req.body;
+    const validStatuses = ['open', 'in-progress', 'resolved', 'closed', 'reopened'];
+    
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        error: `Estado inválido. Valores permitidos: ${validStatuses.join(', ')}` 
+      });
+    }
+
+    const defect = await Defect.updateStatus(req.params.defectId, status, resolutionNotes);
+    if (!defect) {
+      return res.status(404).json({ error: 'Defecto no encontrado' });
+    }
+
+    res.json(defect);
+  } catch (error) {
+    console.error('Error al actualizar estado de defecto:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener estadísticas de defectos
+app.get('/projects/:id/defects/statistics', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const statistics = await Defect.getStatistics(req.params.id);
+    res.json(statistics);
+  } catch (error) {
+    console.error('Error al obtener estadísticas de defectos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ TAREAS (TASKS) ============
+
+// Crear tarea
+app.post('/projects/:id/tasks', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const error = validateRequired(['title'], req.body);
+    if (error) return res.status(400).json({ error });
+
+    const task = await Task.create(req.params.id, req.body);
+    res.status(201).json(task);
+  } catch (error) {
+    console.error('Error al crear tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener tareas del proyecto con filtros
+app.get('/projects/:id/tasks', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const filters = {
+      status: req.query.status,
+      priority: req.query.priority,
+      taskType: req.query.taskType,
+      assignedTo: req.query.assignedTo,
+      phaseId: req.query.phaseId,
+      iterationId: req.query.iterationId,
+    };
+
+    const tasks = await Task.findByProject(req.params.id, filters);
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error al obtener tareas:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener tarea por ID
+app.get('/tasks/:id', async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Error al obtener tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar tarea
+app.put('/tasks/:id', async (req, res) => {
+  try {
+    const task = await Task.update(req.params.id, req.body);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Error al actualizar tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar estado de tarea (para kanban)
+app.put('/tasks/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!status) {
+      return res.status(400).json({ error: 'El campo status es requerido' });
+    }
+
+    const task = await Task.updateStatus(req.params.id, status);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Error al actualizar estado de tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Asignar tarea
+app.put('/tasks/:id/assign', async (req, res) => {
+  try {
+    const { assignedTo, assignedRole } = req.body;
+    if (!assignedTo) {
+      return res.status(400).json({ error: 'El campo assignedTo es requerido' });
+    }
+
+    const task = await Task.assign(req.params.id, assignedTo, assignedRole);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Error al asignar tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar progreso de tarea
+app.put('/tasks/:id/progress', async (req, res) => {
+  try {
+    const { progressPercentage, actualHours } = req.body;
+    if (progressPercentage === undefined) {
+      return res.status(400).json({ error: 'El campo progressPercentage es requerido' });
+    }
+
+    const task = await Task.updateProgress(req.params.id, progressPercentage, actualHours);
+    if (!task) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.json(task);
+  } catch (error) {
+    console.error('Error al actualizar progreso de tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Eliminar tarea
+app.delete('/tasks/:id', async (req, res) => {
+  try {
+    const deleted = await Task.delete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Tarea no encontrada' });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error al eliminar tarea:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener estadísticas del proyecto
+app.get('/projects/:id/tasks/statistics', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const statistics = await Task.getProjectStatistics(req.params.id);
+    res.json(statistics);
+  } catch (error) {
+    console.error('Error al obtener estadísticas de tareas:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Obtener tareas asignadas a un usuario
+app.get('/projects/:id/tasks/assignee/:assignedTo', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const tasks = await Task.findByAssignee(req.params.id, req.params.assignedTo);
+    res.json(tasks);
+  } catch (error) {
+    console.error('Error al obtener tareas del usuario:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
 
 // Exportar app (sin store en memoria)
 module.exports = { app };
