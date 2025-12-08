@@ -9,6 +9,8 @@ const Plan = require('./models/Plan');
 const Iteration = require('./models/Iteration');
 const InceptionArtifact = require('./models/InceptionArtifact');
 const RoleAssignment = require('./models/RoleAssignment');
+const Artifact = require('./models/Artifact');
+const { TestCase, TEST_CASE_STATUSES, TEST_RUN_OUTCOMES } = require('./models/TestCase');
 const Version = require('./models/Version');
 const Defect = require('./models/Defect');
 const Task = require('./models/Task');
@@ -236,6 +238,181 @@ app.post('/projects/:id/inception-artifacts', async (req, res) => {
     res.status(201).json(artifact);
   } catch (error) {
     console.error('Error al crear artefacto:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ ARTEFACTOS GENERICOS ============
+
+app.get('/projects/:id/artifacts', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const filters = {
+      phaseId: req.query.phaseId,
+      iterationId: req.query.iterationId,
+      status: req.query.status,
+      type: req.query.type,
+      owner: req.query.owner,
+    };
+
+    const artifacts = await Artifact.findByProject(req.params.id, filters);
+    res.json(artifacts);
+  } catch (error) {
+    console.error('Error al obtener artefactos genéricos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/projects/:id/artifacts', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const error = validateRequired(['name'], req.body);
+    if (error) return res.status(400).json({ error });
+
+    const artifact = await Artifact.create(req.params.id, req.body);
+    res.status(201).json(artifact);
+  } catch (error) {
+    console.error('Error al crear artefacto genérico:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.put('/projects/:projectId/artifacts/:artifactId', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const artifact = await Artifact.findById(req.params.artifactId);
+    if (!artifact || artifact.projectId !== req.params.projectId) {
+      return res.status(404).json({ error: 'Artefacto no encontrado en este proyecto' });
+    }
+
+    const updated = await Artifact.update(req.params.artifactId, req.body);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error al actualizar artefacto genérico:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ CASOS DE PRUEBA ============
+
+app.get('/projects/:id/test-cases', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const filters = {
+      status: req.query.status,
+      artifactId: req.query.artifactId,
+    };
+
+    const testCases = await TestCase.findByProject(req.params.id, filters);
+    res.json(testCases);
+  } catch (error) {
+    console.error('Error al obtener casos de prueba:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/projects/:id/test-cases', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const error = validateRequired(['title'], req.body);
+    if (error) return res.status(400).json({ error });
+
+    if (req.body.artifactId) {
+      const artifact = await Artifact.findById(req.body.artifactId);
+      if (!artifact || artifact.projectId !== req.params.id) {
+        return res.status(400).json({ error: 'El artefacto especificado no pertenece al proyecto' });
+      }
+    }
+
+    if (req.body.status && !TEST_CASE_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ error: `Estado inválido. Valores permitidos: ${TEST_CASE_STATUSES.join(', ')}` });
+    }
+
+    const testCase = await TestCase.create(req.params.id, req.body);
+    res.status(201).json(testCase);
+  } catch (error) {
+    console.error('Error al crear caso de prueba:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.put('/projects/:projectId/test-cases/:testCaseId', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const testCase = await TestCase.findById(req.params.testCaseId);
+    if (!testCase || testCase.projectId !== req.params.projectId) {
+      return res.status(404).json({ error: 'Caso de prueba no encontrado' });
+    }
+
+    if (req.body.artifactId) {
+      const artifact = await Artifact.findById(req.body.artifactId);
+      if (!artifact || artifact.projectId !== req.params.projectId) {
+        return res.status(400).json({ error: 'El artefacto especificado no pertenece al proyecto' });
+      }
+    }
+
+    const updated = await TestCase.update(req.params.testCaseId, req.body);
+    res.json(updated);
+  } catch (error) {
+    console.error('Error al actualizar caso de prueba:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.get('/projects/:projectId/test-cases/:testCaseId/runs', async (req, res) => {
+  try {
+    const testCase = await TestCase.findById(req.params.testCaseId);
+    if (!testCase || testCase.projectId !== req.params.projectId) {
+      return res.status(404).json({ error: 'Caso de prueba no encontrado' });
+    }
+
+    const runs = await TestCase.getRuns(req.params.testCaseId);
+    res.json(runs);
+  } catch (error) {
+    console.error('Error al obtener ejecuciones del caso:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/projects/:projectId/test-cases/:testCaseId/runs', async (req, res) => {
+  try {
+    const testCase = await TestCase.findById(req.params.testCaseId);
+    if (!testCase || testCase.projectId !== req.params.projectId) {
+      return res.status(404).json({ error: 'Caso de prueba no encontrado' });
+    }
+
+    if (!req.body.outcome || !TEST_RUN_OUTCOMES.includes(req.body.outcome)) {
+      return res.status(400).json({ error: `Resultado inválido. Valores permitidos: ${TEST_RUN_OUTCOMES.join(', ')}` });
+    }
+
+    const run = await TestCase.addRun(req.params.testCaseId, req.body);
+    res.status(201).json(run);
+  } catch (error) {
+    console.error('Error al registrar ejecución del caso:', error.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ApiService, Defect, DefectStatistics, Project } from '../services/api.service';
+import { ApiService, Artifact, Defect, DefectStatistics, Project, TestCase } from '../services/api.service';
 import { sharedStyles } from './shared-styles';
 
 @Component({
@@ -105,6 +105,24 @@ import { sharedStyles } from './shared-styles';
           <div class="form-group">
             <label>Fecha de reporte</label>
             <input type="date" [(ngModel)]="form.reportedDate" name="reportedDate" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Artefacto relacionado</label>
+            <select [(ngModel)]="form.artifactId" name="artifactId">
+              <option value="">Sin artefacto</option>
+              <option *ngFor="let artifact of artifacts" [value]="artifact.id">{{ artifact.name }}</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Caso de prueba</label>
+            <select [(ngModel)]="form.testCaseId" name="testCaseId">
+              <option value="">Sin caso</option>
+              <option *ngFor="let testCase of testCases" [value]="testCase.id">{{ testCase.title }}</option>
+            </select>
           </div>
         </div>
 
@@ -513,6 +531,8 @@ export class DefectsComponent implements OnInit {
   defects: Defect[] = [];
   statistics: DefectStatistics | null = null;
   phases: any[] = [];
+  artifacts: Artifact[] = [];
+  testCases: TestCase[] = [];
   showForm = false;
 
   form = {
@@ -523,6 +543,8 @@ export class DefectsComponent implements OnInit {
     reportedBy: '',
     assignedTo: '',
     phaseId: '',
+    artifactId: '',
+    testCaseId: '',
     reportedDate: new Date().toISOString().split('T')[0],
   };
 
@@ -542,6 +564,8 @@ export class DefectsComponent implements OnInit {
     this.loadProject();
     this.loadDefects();
     this.loadStatistics();
+    this.loadArtifacts();
+    this.loadTestCases();
   }
 
   loadProject(): void {
@@ -567,18 +591,38 @@ export class DefectsComponent implements OnInit {
     });
   }
 
+  loadArtifacts(): void {
+    this.api.getArtifacts(this.projectId).subscribe((data) => {
+      this.artifacts = data;
+    });
+  }
+
+  loadTestCases(): void {
+    this.api.getTestCases(this.projectId).subscribe((data) => {
+      this.testCases = data;
+    });
+  }
+
   createDefect(): void {
     if (!this.form.title) {
       alert('El título es requerido');
       return;
     }
 
-    this.api.createDefect(this.projectId, this.form).subscribe({
+    const payload = {
+      ...this.form,
+      artifactId: this.form.artifactId || undefined,
+      testCaseId: this.form.testCaseId || undefined,
+    };
+
+    this.api.createDefect(this.projectId, payload).subscribe({
       next: () => {
         this.loadDefects();
         this.loadStatistics();
         this.resetForm();
         this.showForm = false;
+        this.loadArtifacts();
+        this.loadTestCases();
       },
       error: (err) => {
         alert(err.error?.error || 'Error al crear defecto');
@@ -625,6 +669,8 @@ export class DefectsComponent implements OnInit {
       reportedBy: '',
       assignedTo: '',
       phaseId: '',
+      artifactId: '',
+      testCaseId: '',
       reportedDate: new Date().toISOString().split('T')[0],
     };
   }
@@ -657,5 +703,13 @@ export class DefectsComponent implements OnInit {
       high: 'Alta',
     };
     return labels[priority] || priority;
+  }
+
+  artifactName(id: string): string | undefined {
+    return this.artifacts.find((artifact) => artifact.id === id)?.name;
+  }
+
+  testCaseName(id: string): string | undefined {
+    return this.testCases.find((testCase) => testCase.id === id)?.title;
   }
 }

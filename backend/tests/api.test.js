@@ -271,6 +271,28 @@ describe('OpenAndUp API', () => {
       expect(res.body.byPriority.low).toBe(1);
     });
 
+    it('links defect to artifact and test case', async () => {
+      const artifact = await request(app)
+        .post(`/projects/${testProjectId}/artifacts`)
+        .send({ name: 'Documento de arquitectura', status: 'pending', type: 'architecture' });
+
+      const testCase = await request(app)
+        .post(`/projects/${testProjectId}/test-cases`)
+        .send({ title: 'Login flow', artifactId: artifact.body.id });
+
+      const res = await request(app)
+        .post(`/projects/${testProjectId}/defects`)
+        .send({
+          title: 'Defecto vinculado',
+          artifactId: artifact.body.id,
+          testCaseId: testCase.body.id,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.artifactId).toBe(artifact.body.id);
+      expect(res.body.testCaseId).toBe(testCase.body.id);
+    });
+
     it('validates severity values', async () => {
       const res = await request(app)
         .post(`/projects/${testProjectId}/defects`)
@@ -306,6 +328,89 @@ describe('OpenAndUp API', () => {
 
       expect(res.status).toBe(404);
       expect(res.body.error).toContain('Proyecto no encontrado');
+    });
+  });
+
+  describe('artifacts', () => {
+    beforeEach(async () => {
+      const project = await createTestProject();
+      testProjectId = project.id;
+    });
+
+    it('creates and lists generic artifacts', async () => {
+      const created = await request(app)
+        .post(`/projects/${testProjectId}/artifacts`)
+        .send({ name: 'Documento elaboraciA3n', status: 'pending', type: 'architecture' });
+
+      expect(created.status).toBe(201);
+      expect(created.body.name).toBe('Documento elaboraciA3n');
+
+      const list = await request(app).get(`/projects/${testProjectId}/artifacts`);
+      expect(list.status).toBe(200);
+      expect(list.body.some((artifact) => artifact.id === created.body.id)).toBeTruthy();
+    });
+
+    it('updates an artifact', async () => {
+      const artifact = await request(app)
+        .post(`/projects/${testProjectId}/artifacts`)
+        .send({ name: 'Documento de construcciA3n', status: 'pending', type: 'design-document' });
+
+      const updated = await request(app)
+        .put(`/projects/${testProjectId}/artifacts/${artifact.body.id}`)
+        .send({ status: 'review', owner: 'Equipo QA' });
+
+      expect(updated.status).toBe(200);
+      expect(updated.body.status).toBe('review');
+      expect(updated.body.owner).toBe('Equipo QA');
+    });
+  });
+
+  describe('test cases', () => {
+    beforeEach(async () => {
+      const project = await createTestProject();
+      testProjectId = project.id;
+    });
+
+    it('creates test cases linked to artifacts', async () => {
+      const artifact = await request(app)
+        .post(`/projects/${testProjectId}/artifacts`)
+        .send({ name: 'Plan de pruebas', status: 'pending', type: 'test-case' });
+
+      const testCase = await request(app)
+        .post(`/projects/${testProjectId}/test-cases`)
+        .send({
+          title: 'Login con credenciales',
+          artifactId: artifact.body.id,
+          createdBy: 'QA Lead',
+        });
+
+      expect(testCase.status).toBe(201);
+      expect(testCase.body.artifactId).toBe(artifact.body.id);
+
+      const list = await request(app).get(`/projects/${testProjectId}/test-cases`);
+      expect(list.status).toBe(200);
+      expect(list.body.some((tc) => tc.id === testCase.body.id)).toBeTruthy();
+    });
+
+    it('records executions and updates status', async () => {
+      const artifact = await request(app)
+        .post(`/projects/${testProjectId}/artifacts`)
+        .send({ name: 'Caso crítico', status: 'pending', type: 'test-case' });
+
+      const testCase = await request(app)
+        .post(`/projects/${testProjectId}/test-cases`)
+        .send({ title: 'Registro de error', artifactId: artifact.body.id });
+
+      const run = await request(app)
+        .post(`/projects/${testProjectId}/test-cases/${testCase.body.id}/runs`)
+        .send({ outcome: 'pass', executedBy: 'QA', notes: 'Automatizado' });
+
+      expect(run.status).toBe(201);
+      expect(run.body.outcome).toBe('pass');
+
+      const updated = await request(app).get(`/projects/${testProjectId}/test-cases`);
+      const refreshed = updated.body.find((tc) => tc.id === testCase.body.id);
+      expect(refreshed?.status).toBe('passed');
     });
   });
 

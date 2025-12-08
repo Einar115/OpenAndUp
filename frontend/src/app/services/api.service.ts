@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, switchMap } from 'rxjs';
 import {
+  Phase,
   Project,
   Plan,
   InceptionArtifact,
@@ -15,9 +16,38 @@ import {
   TaskStatus,
   TaskPriority,
   TaskType,
+  Artifact,
+  ArtifactStatus,
+  ArtifactType,
+  TestCase,
+  TestCaseStatus,
+  TestCaseOutcome,
+  TestRun,
 } from '../models/openup.model';
 
-export type { Project, Plan, InceptionArtifact, Iteration, RoleAssignment, Version, Defect, DefectStatistics, Task, TaskStatistics, TaskStatus, TaskPriority, TaskType };
+export type {
+  Phase,
+  Project,
+  Plan,
+  InceptionArtifact,
+  Iteration,
+  RoleAssignment,
+  Version,
+  Defect,
+  DefectStatistics,
+  Task,
+  TaskStatistics,
+  TaskStatus,
+  TaskPriority,
+  TaskType,
+  Artifact,
+  ArtifactStatus,
+  ArtifactType,
+  TestCase,
+  TestCaseStatus,
+  TestCaseOutcome,
+  TestRun,
+};
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -79,6 +109,42 @@ export class ApiService {
 
   addRole(projectId: string, payload: Partial<RoleAssignment>): Observable<RoleAssignment> {
     return this.http.post<RoleAssignment>(`${this.baseUrl}/projects/${projectId}/roles`, payload);
+  }
+
+  // Artifacts
+  getArtifacts(projectId: string, filters?: Record<string, any>): Observable<Artifact[]> {
+    const query = this.buildQueryString(filters);
+    return this.http.get<Artifact[]>(`${this.baseUrl}/projects/${projectId}/artifacts${query}`);
+  }
+
+  createArtifact(projectId: string, payload: Partial<Artifact>): Observable<Artifact> {
+    return this.http.post<Artifact>(`${this.baseUrl}/projects/${projectId}/artifacts`, payload);
+  }
+
+  updateArtifact(projectId: string, artifactId: string, payload: Partial<Artifact>): Observable<Artifact> {
+    return this.http.put<Artifact>(`${this.baseUrl}/projects/${projectId}/artifacts/${artifactId}`, payload);
+  }
+
+  // Test cases
+  getTestCases(projectId: string, filters?: Record<string, any>): Observable<TestCase[]> {
+    const query = this.buildQueryString(filters);
+    return this.http.get<TestCase[]>(`${this.baseUrl}/projects/${projectId}/test-cases${query}`);
+  }
+
+  createTestCase(projectId: string, payload: Partial<TestCase>): Observable<TestCase> {
+    return this.http.post<TestCase>(`${this.baseUrl}/projects/${projectId}/test-cases`, payload);
+  }
+
+  updateTestCase(projectId: string, testCaseId: string, payload: Partial<TestCase>): Observable<TestCase> {
+    return this.http.put<TestCase>(`${this.baseUrl}/projects/${projectId}/test-cases/${testCaseId}`, payload);
+  }
+
+  getTestCaseRuns(projectId: string, testCaseId: string): Observable<TestRun[]> {
+    return this.http.get<TestRun[]>(`${this.baseUrl}/projects/${projectId}/test-cases/${testCaseId}/runs`);
+  }
+
+  runTestCase(projectId: string, testCaseId: string, payload: Partial<TestRun> & { outcome: TestCaseOutcome }): Observable<TestRun> {
+    return this.http.post<TestRun>(`${this.baseUrl}/projects/${projectId}/test-cases/${testCaseId}/runs`, payload);
   }
 
   // Versions
@@ -163,5 +229,21 @@ export class ApiService {
 
   getTasksByAssignee(projectId: string, assignedTo: string): Observable<Task[]> {
     return this.http.get<Task[]>(`${this.baseUrl}/projects/${projectId}/tasks/assignee/${assignedTo}`);
+  }
+
+  private buildQueryString(filters?: Record<string, any>): string {
+    if (!filters) {
+      return '';
+    }
+
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        params.set(key, String(value));
+      }
+    });
+
+    const query = params.toString();
+    return query ? `?${query}` : '';
   }
 }

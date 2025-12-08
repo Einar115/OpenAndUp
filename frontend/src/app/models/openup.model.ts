@@ -1,5 +1,5 @@
 export type PhaseStatus = 'not-started' | 'in-progress' | 'complete';
-export type ArtifactStatus = 'pending' | 'in-progress' | 'done';
+export type ArtifactStatus = 'pending' | 'in-progress' | 'review' | 'approved' | 'done';
 export type IterationStatus = 'planned' | 'active' | 'complete';
 export type RoleType = 'Project Manager' | 'Tech Lead' | 'QA' | 'Stakeholder' | 'Coach' | 'Developer';
 export type VersionStatus = 'draft' | 'released' | 'archived';
@@ -9,6 +9,18 @@ export type DefectPriority = 'low' | 'medium' | 'high';
 export type TaskStatus = 'backlog' | 'todo' | 'in-progress' | 'review' | 'testing' | 'done' | 'blocked';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 export type TaskType = 'feature' | 'bug' | 'improvement' | 'documentation' | 'technical-debt';
+export type ArtifactType =
+  | 'vision-document'
+  | 'architecture'
+  | 'use-case'
+  | 'test-case'
+  | 'requirements'
+  | 'design-document'
+  | 'deployment-plan'
+  | 'user-manual'
+  | 'other';
+export type TestCaseStatus = 'draft' | 'ready' | 'executing' | 'blocked' | 'passed' | 'failed';
+export type TestCaseOutcome = 'pass' | 'fail' | 'blocked';
 
 export interface Phase {
   id: string;
@@ -52,6 +64,26 @@ export interface InceptionArtifact {
   required: boolean;
   owner?: string;
   phaseId?: string;
+}
+
+export interface Artifact {
+  id: string;
+  projectId: string;
+  phaseId?: string;
+  iterationId?: string;
+  name: string;
+  description?: string;
+  type: ArtifactType;
+  status: ArtifactStatus;
+  required: boolean;
+  owner?: string;
+  reviewer?: string;
+  dueDate?: string;
+  completedDate?: string;
+  notes?: string;
+  fileUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface RoleAssignment {
@@ -160,4 +192,26 @@ export interface TaskStatistics {
   estimatedHours: number;
   actualHours: number;
   overdueTasks: number;
+}
+
+export interface TestCase {
+  id: string;
+  projectId: string;
+  artifactId?: string;
+  title: string;
+  description?: string;
+  status: TestCaseStatus;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TestRun {
+  id: string;
+  testCaseId: string;
+  outcome: TestCaseOutcome;
+  executedBy?: string;
+  notes?: string;
+  executedAt?: string;
+  createdAt?: string;
 }

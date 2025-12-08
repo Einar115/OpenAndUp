@@ -56,6 +56,7 @@ describe('VersionsComponent', () => {
     fixture = TestBed.createComponent(VersionsComponent);
     component = fixture.componentInstance;
     apiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
+    component.projectId = 'proj-1';
   });
 
   it('should create', () => {

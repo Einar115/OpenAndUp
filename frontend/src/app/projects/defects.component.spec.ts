@@ -56,6 +56,8 @@ describe('DefectsComponent', () => {
       'createDefect',
       'updateDefectStatus',
       'getDefectStatistics',
+      'getArtifacts',
+      'getTestCases',
     ]);
 
     await TestBed.configureTestingModule({
@@ -78,6 +80,9 @@ describe('DefectsComponent', () => {
     fixture = TestBed.createComponent(DefectsComponent);
     component = fixture.componentInstance;
     apiService = TestBed.inject(ApiService) as jasmine.SpyObj<ApiService>;
+    apiService.getArtifacts.and.returnValue(of([]));
+    apiService.getTestCases.and.returnValue(of([]));
+    component.projectId = 'proj-1';
   });
 
   it('should create', () => {

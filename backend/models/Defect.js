@@ -20,6 +20,8 @@ class Defect {
         assigned_to: data.assignedTo,
         phase_id: data.phaseId,
         iteration_id: data.iterationId,
+        artifact_id: data.artifactId,
+        test_case_id: data.testCaseId,
         reported_date: data.reportedDate || new Date().toISOString().split('T')[0],
         resolved_date: data.resolvedDate,
         resolution_notes: data.resolutionNotes,
@@ -72,6 +74,8 @@ class Defect {
     if (data.assignedTo !== undefined) updates.assigned_to = data.assignedTo;
     if (data.phaseId !== undefined) updates.phase_id = data.phaseId;
     if (data.iterationId !== undefined) updates.iteration_id = data.iterationId;
+    if (data.artifactId !== undefined) updates.artifact_id = data.artifactId;
+    if (data.testCaseId !== undefined) updates.test_case_id = data.testCaseId;
     if (data.reportedDate !== undefined) updates.reported_date = data.reportedDate;
     if (data.resolvedDate !== undefined) updates.resolved_date = data.resolvedDate;
     if (data.resolutionNotes !== undefined) updates.resolution_notes = data.resolutionNotes;
@@ -148,7 +152,9 @@ class Defect {
       reportedBy: dbDefect.reported_by,
       assignedTo: dbDefect.assigned_to,
       phaseId: dbDefect.phase_id,
+      artifactId: dbDefect.artifact_id,
       iterationId: dbDefect.iteration_id,
+      testCaseId: dbDefect.test_case_id,
       reportedDate: dbDefect.reported_date,
       resolvedDate: dbDefect.resolved_date,
       resolutionNotes: dbDefect.resolution_notes,
