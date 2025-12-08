@@ -12,6 +12,7 @@ const RoleAssignment = require('./models/RoleAssignment');
 const Version = require('./models/Version');
 const Defect = require('./models/Defect');
 const Task = require('./models/Task');
+const Progress = require('./models/Progress');
 
 const app = express();
 
@@ -731,6 +732,58 @@ app.get('/projects/:id/tasks/assignee/:assignedTo', async (req, res) => {
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
+
+// ============ AVANCE GLOBAL DEL PROYECTO ============
+// GET /projects/:id/progress
+app.get('/projects/:id/progress', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+
+    // Validar que exista el proyecto
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const result = await Progress.getProjectProgress(projectId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error al obtener progreso del proyecto:', error);
+
+    // Si el modelo Progress lanza un error con status, lo respetamos
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ============ AVANCE POR ITERACIÓN ============
+// GET /projects/:projectId/iterations/:iterationId/progress
+app.get('/projects/:projectId/iterations/:iterationId/progress', async (req, res) => {
+  try {
+    const { projectId, iterationId } = req.params;
+
+    // Validar que exista el proyecto
+    const project = await Project.findById(projectId);
+    if (!project) {
+      return res.status(404).json({ error: 'Proyecto no encontrado' });
+    }
+
+    const result = await Progress.getIterationProgress(projectId, iterationId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error al obtener progreso de iteración:', error);
+
+    if (error.status) {
+      return res.status(error.status).json({ error: error.message });
+    }
+
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 
 // Exportar app (sin store en memoria)
 module.exports = { app };
